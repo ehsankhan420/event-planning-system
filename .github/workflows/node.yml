@@ -36,5 +36,5 @@ jobs:
       run: npm test
       env:
         CI: true
-        JWT_SECRET: github_actions_test_secret
-        TEST_MONGODB_URI: mongodb://localhost:27017/event-planner-test
+        JWT_SECRET: your_jwt_secret_key
+        TEST_MONGODB_URI: mongodb+srv://rockstarabhi53060:callofDUTY@cluster0.fpe9s.mongodb.net/
