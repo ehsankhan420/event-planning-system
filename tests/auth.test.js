@@ -1,8 +1,10 @@
 import request from 'supertest';
-import mongoose from 'mongoose';
 import User from '../models/User.js';
-import { expect, beforeAll, beforeEach, afterAll, describe, it, jest } from '@jest/globals';
+import jwt from 'jsonwebtoken';
+import { expect, beforeAll, beforeEach, afterAll, describe, it } from '@jest/globals';
 import app, { reminderTask } from '../app.js';
+import { connectDB, disconnectDB } from '../utils/db.js';
+
 // Test user data
 const testUser = {
   username: 'testuser',
@@ -11,43 +13,38 @@ const testUser = {
 };
 
 // Connect to test database before tests
-// Connect to test database before tests
-// Connect to test database before tests
 beforeAll(async () => {
-    const testDbUri = process.env.TEST_MONGODB_URI ||  'mongodb+srv://rockstarabhi53060:callofDUTY@cluster0.fpe9s.mongodb.net/';
-    await mongoose.connect(testDbUri, {
-      serverSelectionTimeoutMS: 30000, // Increase timeout for server selection
-      socketTimeoutMS: 30000, // Increase socket timeout
-    });
-    
-    // Ensure connection is established
-    console.log('MongoDB connection state:', mongoose.connection.readyState);
-  }, 30000);
+  // Connect to the test database
+  await connectDB();
   
-  // Clear database between tests
-  beforeEach(async () => {
-    try {
-      await User.deleteMany({});
-    } catch (error) {
-      console.error('Error clearing users:', error);
-    }
-  }, 15000); // Increase timeout for beforeEach
+  // Ensure connection is established
+  console.log('Auth tests: Connected to MongoDB');
+}, 30000);
+
+// Clear database between tests
+beforeEach(async () => {
+  try {
+    await User.deleteMany({});
+    console.log('Auth tests: Cleared users collection');
+  } catch (error) {
+    console.error('Error clearing users:', error);
+  }
+}, 15000);
 
 // Disconnect after tests
-// Disconnect after tests
-// At the end of the file, in the afterAll hook:
 afterAll(async () => {
-    // Stop the cron job if it exists
-    if (reminderTask) {
-      reminderTask.stop();
-    }
-    
-    await mongoose.connection.close();
-    // Add a small delay to ensure all connections are properly closed
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }, 10000);
-
+  // Stop the cron job if it exists
+  if (reminderTask) {
+    reminderTask.stop();
+  }
   
+  // Disconnect from MongoDB
+  await disconnectDB();
+  
+  // Add a small delay to ensure all connections are properly closed
+  await new Promise(resolve => setTimeout(resolve, 1000));
+}, 30000); // Increased timeout to 30 seconds
+
 describe('Authentication API', () => {
   describe('POST /api/auth/register', () => {
     it('should register a new user', async () => {
