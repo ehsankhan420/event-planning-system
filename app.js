@@ -1,5 +1,4 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
@@ -8,6 +7,7 @@ import cron from 'node-cron';
 import authRoutes from './routes/auth.js';
 import eventRoutes from './routes/events.js';
 import { checkReminders } from './utils/reminderService.js';
+import { connectDB } from './utils/db.js';
 
 // Load environment variables
 dotenv.config();
@@ -19,16 +19,17 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://rockstarabhi53060:callofDUTY@cluster0.fpe9s.mongodb.net/')
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// Connect to database (only if not in test environment)
+if (process.env.NODE_ENV !== 'test') {
+  connectDB()
+    .then(() => console.log('Connected to MongoDB from app.js'))
+    .catch(err => console.error('MongoDB connection error from app.js:', err));
+}
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 
-// Schedule reminder checks every minute
 // Schedule reminder checks every minute (only in non-test environment)
 let reminderTask;
 if (process.env.NODE_ENV !== 'test') {
@@ -48,9 +49,9 @@ export { reminderTask };
 // Start server
 // Only start the server if this file is run directly
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  }
-  
-  export default app;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+export default app;
