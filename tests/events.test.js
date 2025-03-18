@@ -1,10 +1,11 @@
 import request from 'supertest';
-import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Event from '../models/Event.js';
 import jwt from 'jsonwebtoken';
-import { expect, beforeAll, beforeEach, afterAll, describe, it, jest } from '@jest/globals';
+import { expect, beforeAll, beforeEach, afterAll, describe, it } from '@jest/globals';
 import app, { reminderTask } from '../app.js';
+import { connectDB, disconnectDB } from '../utils/db.js';
+
 // Test user data
 const testUser = {
   username: 'eventuser',
@@ -13,23 +14,21 @@ const testUser = {
 };
 
 // Test event data
-// Test event data
 const testEvent = {
-    name: 'Test Event',
-    description: 'This is a test event',
-    date: new Date('2023-12-31T12:00:00Z'),
-    category: 'Meeting',
-    reminders: [{ time: new Date('2023-12-30T12:00:00Z'), sent: false }]  // Change this line
-  };
+  name: 'Test Event',
+  description: 'This is a test event',
+  date: new Date('2023-12-31T12:00:00Z'),
+  category: 'Meeting',
+  reminders: [{ time: new Date('2023-12-30T12:00:00Z'), sent: false }]
+};
 
 let token;
 let userId;
 
 // Connect to test database before tests
-// Connect to test database before tests
 beforeAll(async () => {
-  const testDbUri = process.env.TEST_MONGODB_URI || 'mongodb+srv://rockstarabhi53060:callofDUTY@cluster0.fpe9s.mongodb.net/';
-  await mongoose.connect(testDbUri);
+  // Connect to the test database
+  await connectDB();
   
   // Create a test user
   const user = new User(testUser);
@@ -42,25 +41,31 @@ beforeAll(async () => {
     process.env.JWT_SECRET || 'your_jwt_secret',
     { expiresIn: '1d' }
   );
-}, 30000); // Increase timeout to 30 seconds
+  
+  console.log('Events tests: Connected to MongoDB and created test user');
+}, 30000);
+
 // Clear events between tests
 beforeEach(async () => {
   await Event.deleteMany({});
+  console.log('Events tests: Cleared events collection');
 });
 
 // Disconnect after tests
-// Disconnect after tests
-// Disconnect after tests
 afterAll(async () => {
-    await User.deleteMany({});
-    await Event.deleteMany({});
-    if (reminderTask) {
-        reminderTask.stop();
-      }
-      await mongoose.connection.close();
-      // Add a small delay to ensure all connections are properly closed
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }, 10000);
+  await User.deleteMany({});
+  await Event.deleteMany({});
+  
+  if (reminderTask) {
+    reminderTask.stop();
+  }
+  
+  // Disconnect from MongoDB
+  await disconnectDB();
+  
+  // Add a small delay to ensure all connections are properly closed
+  await new Promise(resolve => setTimeout(resolve, 1000));
+}, 30000); // Increased timeout to 30 seconds
 
 describe('Events API', () => {
   describe('POST /api/events', () => {
