@@ -12,8 +12,8 @@ jobs:
 
     strategy:
       matrix:
-            node-version: [18.x, 20.x]  # Use more recent versions
-            mongodb-version: ['6.0']
+        node-version: [16.x, 18.x]
+        mongodb-version: ['6.0']
 
     steps:
     - uses: actions/checkout@v3
@@ -24,18 +24,24 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     
+    - name: Use latest Corepack
+      run: |
+        echo "Before: corepack version => $(corepack --version || echo 'not installed')"
+        npm install -g corepack@latest
+        echo "After : corepack version => $(corepack --version)"
+        corepack enable
+    
     - name: Start MongoDB
-      uses: supercharge/mongodb-github-action@1.8.0
+      uses: supercharge/mongodb-github-action@1.10.0
       with:
         mongodb-version: ${{ matrix.mongodb-version }}
     
     - name: Install dependencies
-      run: npm install
+      run: npm ci
     
     - name: Run tests
       run: npm test
       env:
         CI: true
-        JWT_SECRET: your_jwt_secret_key
-        TEST_MONGODB_URI: mongodb+srv://rockstarabhi53060:callofDUTY@cluster0.fpe9s.mongodb.net/
-          PORT:3000
+        JWT_SECRET: github_actions_test_secret
+        TEST_MONGODB_URI: mongodb://localhost:27017/event-planner-test
